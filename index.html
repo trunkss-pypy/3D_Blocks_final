@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171713">
+  <meta name="color-scheme" content="dark">
+  <title>Bricksmith Studio — 3D LEGO Sandbox</title>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div id="unsupported" class="unsupported" hidden>
+    <div class="unsupported__card">
+      <span class="eyebrow">Kompatibilitas browser</span>
+      <h1>WebGL belum tersedia</h1>
+      <p>Aktifkan akselerasi perangkat keras atau buka halaman ini di versi terbaru Chrome, Edge, Firefox, atau Safari.</p>
+    </div>
+  </div>
+
+  <main id="app" class="app-shell">
+    <div id="canvas-container" class="viewport" aria-label="Area kerja LEGO tiga dimensi"></div>
+    <canvas id="ui-canvas" class="ui-canvas" aria-hidden="true"></canvas>
+    <video id="camera-feed" class="camera-feed" autoplay playsinline muted></video>
+    <div id="camera-status" class="camera-status" aria-hidden="true">
+      <span class="camera-status__icon"></span>
+      <span class="camera-status__copy"><strong>MENYIAPKAN KAMERA</strong><small>Tunggu sebentar</small></span>
+    </div>
+
+    <header class="topbar">
+      <button id="menu-button" class="icon-button menu-button" type="button" aria-controls="control-panel" aria-expanded="false" aria-label="Buka panel kontrol">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div>
+          <strong>BRICKSMITH</strong>
+          <small>V5 / UNIVERSAL EDITION</small>
+        </div>
+      </div>
+      <div class="status-cluster">
+        <span id="input-status" class="status-chip is-off"><i></i> Kontrol tangan belum aktif</span>
+        <button id="help-button" class="text-button" type="button">Petunjuk</button>
+      </div>
+    </header>
+
+    <aside id="control-panel" class="control-panel" aria-label="Panel kontrol LEGO">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">Meja kerja 01</span>
+          <h1>Rakit tanpa batas.</h1>
+        </div>
+        <button id="close-panel" class="close-button" type="button" aria-label="Tutup panel">×</button>
+      </div>
+
+      <!-- Tambahan: Pengaturan Keping Aktif (Skala & Rotasi Presisi) -->
+      <section class="panel-section">
+        <div class="section-title"><span>00</span><h2>Edit Keping Aktif</h2></div>
+        <div class="slider-group">
+          <label class="field-label" for="brick-scale">Ukuran Keping: <span id="scale-val">100%</span></label>
+          <input type="range" id="brick-scale" class="range-slider" min="60" max="100" value="100" style="width: 100%; margin-bottom: 10px;">
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>01</span><h2>Tambah keping</h2></div>
+        <div class="brick-grid">
+          <button class="brick-button brick-button--red" data-add="cube" type="button"><i class="brick-icon one"></i><span>1 × 1</span></button>
+          <button class="brick-button brick-button--yellow" data-add="block" type="button"><i class="brick-icon two"></i><span>2 × 1</span></button>
+          <button class="brick-button brick-button--purple" data-add="longblock" type="button"><i class="brick-icon three"><span></span></i><span>3 × 1</span></button>
+          <button class="brick-button brick-button--blue" data-add="sphere" type="button"><i class="brick-icon round"></i><span>Bulat</span></button>
+          <button class="brick-button brick-button--green" data-add="pyramid" type="button"><i class="brick-icon roof"></i><span>Atap</span></button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>02</span><h2>Cetak biru</h2></div>
+        <label class="field-label" for="preset-select">Pilih struktur</label>
+        <select id="preset-select" class="select-control">
+          <option value="">Meja kosong</option>
+          <option value="rumah">Rumah sederhana</option>
+          <option value="gerbang">Gerbang agung</option>
+          <option value="jembatan">Jembatan</option>
+          <option value="menara">Menara</option>
+          <option value="piramida">Piramida</option>
+          <option value="tembok">Tembok 3x1 (Baru)</option>
+        </select>
+        
+        <button id="save-preset-button" class="control-button" type="button" style="margin-top: 8px; width: 100%;">Simpan Pola Saat Ini</button>
+
+        <div class="split-actions" style="margin-top: 14px;">
+          <button id="creator-button" class="control-button" type="button">Gambar pola</button>
+          <button id="undo-blueprint" class="control-button control-button--quiet" type="button">Urungkan</button>
+        </div>
+        <label class="field-label field-label--spaced" for="creator-shape">Bentuk pola</label>
+        <select id="creator-shape" class="select-control">
+          <option value="cube">Keping 1 × 1</option>
+          <option value="block">Keping 2 × 1</option>
+          <option value="longblock">Keping 3 × 1</option>
+          <option value="sphere">Keping bulat</option>
+          <option value="pyramid">Keping atap</option>
+        </select>
+      </section>
+
+      <section class="panel-section challenge-card">
+        <div class="section-title"><span>03</span><h2>Tantangan waktu</h2></div>
+        <div class="challenge-row">
+          <select id="difficulty-select" class="select-control" aria-label="Durasi tantangan">
+            <option value="60">Santai · 60 dtk</option>
+            <option value="45">Sedang · 45 dtk</option>
+            <option value="30">Sulit · 30 dtk</option>
+            <option value="15">Ekstrem · 15 dtk</option>
+          </select>
+          <button id="start-game" class="round-action" type="button" aria-label="Mulai tantangan">→</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-title"><span>04</span><h2>Perangkat</h2></div>
+        <button id="start-camera" class="wide-action wide-action--camera" type="button">
+          <span>Aktifkan kontrol tangan</span><small>Opsional · memerlukan kamera</small>
+        </button>
+        <div class="file-actions">
+          <button id="export-button" class="control-button" type="button">Ekspor JSON</button>
+          <button id="import-button" class="control-button" type="button">Impor JSON</button>
+          <input id="import-input" type="file" accept="application/json,.json" hidden>
+        </div>
+        <button id="reset-button" class="danger-button" type="button">Bersihkan seluruh meja</button>
+      </section>
+    </aside>
+
+    <div id="panel-scrim" class="panel-scrim"></div>
+
+    <section class="workspace-hud" aria-live="polite">
+      <div class="coordinate-card">
+        <span class="eyebrow">Navigasi</span>
+        <strong>GESER / CUBIT</strong>
+        <small>Putar kamera · zoom</small>
+      </div>
+      <div class="tool-strip">
+        <button id="rotate-left" type="button" aria-label="Putar kamera ke kiri">↶</button>
+        <button id="rotate-brick" type="button" aria-label="Putar keping terpilih">R</button>
+        <button id="rotate-right" type="button" aria-label="Putar kamera ke kanan">↷</button>
+      </div>
+    </section>
+
+    <div id="timer-card" class="timer-card" hidden>
+      <span>Sisa waktu</span>
+      <strong id="timer-value">60</strong>
+      <small>detik</small>
+    </div>
+
+    <div id="score-card" class="score-card" hidden aria-live="polite">
+      <span>Skor tantangan</span>
+      <strong id="challenge-score">0</strong>
+      <small id="challenge-score-detail">Selesaikan pola untuk mendapat skor.</small>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="hand-cursor-0" class="hand-cursor" data-hand="KANAN" data-action="GERAK" aria-hidden="true"><span class="hand-cursor__icon">👉</span></div>
+    <div id="hand-cursor-1" class="hand-cursor hand-cursor--alt" data-hand="KIRI" data-action="GERAK" aria-hidden="true"><span class="hand-cursor__icon">👈</span></div>
+
+    <dialog id="help-dialog" class="help-dialog">
+      <button id="close-help" class="close-button" type="button" aria-label="Tutup petunjuk">×</button>
+      <span class="eyebrow">Manual singkat</span>
+      <h2>Bangun dengan cara apa pun.</h2>
+      <div class="help-grid">
+        <div><kbd>Drag</kbd><p>Ambil dan pindahkan keping dengan mouse atau jari. Klik dan tahan keping, lalu geser ke posisi baru.</p></div>
+        <div><kbd>W A S D</kbd><p>Putar sudut kamera memakai keyboard. W = atas, A = kiri, S = bawah, D = kanan.</p></div>
+        <div><kbd>R</kbd><p>Putar keping atau pola yang sedang dipilih 90 derajat searah jarum jam.</p></div>
+        <div><kbd>Pinch (cubit)</kbd><p>Rapatkan ibu jari dan telunjuk untuk mengambil keping, tahan lalu geser tangan untuk memindahkan keping ke posisi baru. Lepaskan cubitan untuk menjatuhkan keping.</p></div>
+        <div><kbd>Gesture R (rotasi)</kbd><p>Pilih keping atau pola terlebih dahulu. Tegakkan telunjuk dan jari tengah secara rapat (seperti huruf V), tekuk jari manis dan kelingking ke dalam. Tahan gestur ini ±1 detik untuk memutar objek 90°. Cursor akan berlabel PUTAR saat gestur terdeteksi.</p></div>
+        <div><kbd>Gesture cubit + seret</kbd><p>Arahkan cursor ke objek, cubit (rapatkan ibu jari + telunjuk) untuk mengambil, lalu gerakkan tangan untuk memindahkan. Lepaskan cubitan untuk menjatuhkan objek di posisi baru.</p></div>
+        <div><kbd>Ikon tangan</kbd><p>👉 (kuning) = tangan kanan, 👈 (biru) = tangan kiri. Label berubah dinamis: GERAK (tangan terbuka), CUBIT (sedang mencubit), atau PUTAR (gestur R terdeteksi).</p></div>
+        <div><kbd>HP Android → TV</kbd><p>1. Sambungkan HP dan TV ke Wi-Fi yang sama. 2. Buka menu Pengaturan Cepat (swipe dari atas). 3. Ketuk Cast / Smart View. 4. Pilih TV/Chromecast Anda. 5. Buka halaman Bricksmith di browser Chrome. Pastikan halaman dibuka melalui HTTPS atau localhost agar kamera berfungsi.</p></div>
+        <div><kbd>iPhone/iPad → TV</kbd><p>1. Sambungkan iPhone/iPad dan Apple TV/Smart TV ke Wi-Fi yang sama. 2. Buka Control Center. 3. Ketuk Screen Mirroring (AirPlay). 4. Pilih TV Anda. 5. Buka halaman Bricksmith di Safari. Gunakan mode landscape untuk tampilan lebih luas.</p></div>
+        <div><kbd>Laptop → Proyektor</kbd><p>Windows: tekan Win + K lalu pilih proyektor/TV nirkabel. Mac: System Settings > Displays > Add Display > Mirror or extend to. Pilih mode Duplikat agar operator dan peserta melihat tampilan identik.</p></div>
+        <div><kbd>Laptop → HDMI</kbd><p>Sambungkan kabel HDMI dari laptop ke proyektor/TV. Di Windows: tekan Win + P > pilih "Duplikat". Di Mac: System Settings > Displays > pilih "Mirror Display".</p></div>
+        <div><kbd>Chrome Cast</kbd><p>Dari laptop Chrome: klik tiga titik ⋮ > Cast > pilih perangkat tujuan. Pastikan semua perangkat berada di jaringan Wi-Fi yang sama untuk latensi minimal.</p></div>
+      </div>
+      <p class="help-note">Saat layar diproyeksikan, SEMUA fitur aplikasi ini—termasuk gesture tangan, rotasi, tantangan waktu, dan scoring—tetap dikendalikan dari perangkat yang memegang kamera. Operator melihat kamera, peserta melihat hasil proyeksi. Pastikan halaman dibuka melalui HTTPS atau localhost dan pencahayaan cukup mengarah ke tangan operator.</p>
+    </dialog>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
